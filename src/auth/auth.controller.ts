@@ -13,11 +13,11 @@ export class AuthController {
   }
 
   @Post('login')
-  login(
+  async login(
     @Body() data: LoginDto,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const user = this.authService.validateUser(data.email, data.password);
+    const user = await this.authService.validateUser(data.email, data.password);
     return this.authService.getTokens(user, response);
   }
 

@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import { Request, Response } from 'express';
+import e, { Request, Response } from 'express';
 import { PrismaService } from 'src/prisma.service';
 import { UserService } from 'src/user/user.service';
 import { decrypt, encrypt } from 'src/utils/bcrypt';
@@ -72,22 +72,6 @@ export class AuthService {
     return user;
   };
 
-  private createAccessToken = async (user: IUser) => {
-    const payload: JwtPayload = { id: user.id };
-    return await this.jwtService.signAsync(payload, {
-      secret: this.configService.get('jwt.access_token_secret'),
-      expiresIn: this.configService.get('jwt.access_token_expiration'),
-    });
-  };
-
-  private createRefreshToken = async (user: IUser) => {
-    const payload: JwtPayload = { id: user.id };
-    return await this.jwtService.signAsync(payload, {
-      secret: this.configService.get('jwt.refresh_token_secret'),
-      expiresIn: this.configService.get('jwt.refresh_token_expiration'),
-    });
-  };
-
   getTokens = async (user, response: Response) => {
     const accessToken = await this.createAccessToken(user);
     const refreshToken = await this.createRefreshToken(user);
@@ -100,7 +84,11 @@ export class AuthService {
         maxAge: 7 * 24 * 60 * 60 * 1000,
       })
       .status(200);
-    return { accessToken };
+    return {
+      accessToken,
+      refreshToken,
+      user: { id: user.id, name: user.name, email: user.email },
+    };
   };
 
   refreshToken = async (request: Request) => {
@@ -151,5 +139,21 @@ export class AuthService {
       sameSite: 'none',
     });
     return { message: 'success' };
+  };
+
+  private createAccessToken = async (user: IUser) => {
+    const payload: JwtPayload = { id: user.id };
+    return await this.jwtService.signAsync(payload, {
+      secret: this.configService.get('jwt.access_token_secret'),
+      expiresIn: this.configService.get('jwt.access_token_expiration'),
+    });
+  };
+
+  private createRefreshToken = async (user: IUser) => {
+    const payload: JwtPayload = { id: user.id };
+    return await this.jwtService.signAsync(payload, {
+      secret: this.configService.get('jwt.refresh_token_secret'),
+      expiresIn: this.configService.get('jwt.refresh_token_expiration'),
+    });
   };
 }
