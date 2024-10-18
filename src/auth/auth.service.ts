@@ -7,7 +7,7 @@ import {
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtService } from '@nestjs/jwt';
-import e, { Request, Response } from 'express';
+import { Request, Response } from 'express';
 import { PrismaService } from 'src/prisma.service';
 import { UserService } from 'src/user/user.service';
 import { decrypt, encrypt } from 'src/utils/bcrypt';
@@ -56,7 +56,7 @@ export class AuthService {
     return { message: 'User registered successfully' };
   };
 
-  validateUser = async (email: string, password: string) => {
+  login = async (email: string, password: string, response: Response) => {
     //step 1: check if user exists
     const user = await this.prismaService.user.findUnique({
       where: {
@@ -67,9 +67,17 @@ export class AuthService {
     if (!user || !(await decrypt(password, user.password))) {
       throw new HttpException('Invalid credentials', HttpStatus.BAD_REQUEST);
     }
-
+    const tokens = await this.getTokens(user, response);
     //step 3: return user
-    return user;
+    return {
+      token: tokens.accessToken,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        role: user.role,
+      },
+    };
   };
 
   getTokens = async (user, response: Response) => {
@@ -93,6 +101,7 @@ export class AuthService {
 
   refreshToken = async (request: Request) => {
     const refreshToken = request.cookies.refreshToken;
+
     if (!refreshToken) {
       throw new UnauthorizedException('refresh_token_not_provided');
     }

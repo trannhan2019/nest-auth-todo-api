@@ -17,8 +17,7 @@ export class AuthController {
     @Body() data: LoginDto,
     @Res({ passthrough: true }) response: Response,
   ) {
-    const user = await this.authService.validateUser(data.email, data.password);
-    return this.authService.getTokens(user, response);
+    return this.authService.login(data.email, data.password, response);
   }
 
   @Post('logout')
